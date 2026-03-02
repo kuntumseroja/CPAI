@@ -1,0 +1,110 @@
+# CAPA AI Management System - Configuration
+# PT Bio Farma (Persero) - Quality Assurance
+
+app:
+  name: CAPA AI Management System
+  version: "0.1.0"
+  environment: development
+  debug: true
+
+# LLM Engine Configuration
+llm:
+  vllm:
+    base_url: "http://localhost:8000/v1"
+    model: "meta-llama/Llama-3.1-8B-Instruct"
+    max_tokens: 4096
+    temperature: 0.1
+    tensor_parallel_size: 2
+  
+  litellm:
+    proxy_url: "http://localhost:4000"
+    routing:
+      simple_tasks: vllm
+      complex_reasoning: anthropic/claude-sonnet-4
+      generation_tasks: openai/gpt-4o
+    fallback_enabled: true
+    budget_limits:
+      anthropic: 1000
+      openai: 500
+
+# Embeddings
+embeddings:
+  model: "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+  siebert_model: "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+  dimension: 384
+  batch_size: 64
+
+# RAG Pipeline
+rag:
+  chunk_size: 512
+  chunk_overlap: 50
+  sentence_window: 3
+  hybrid_weights:
+    dense: 0.7
+    sparse: 0.3
+  top_k: 10
+  rerank_top_k: 5
+  context_window_tokens: 200000
+
+# Vector Stores
+vector_store:
+  pgvector:
+    connection_string: "postgresql://user:pass@localhost:5432/capa_ai"
+    table_name: document_embeddings
+  qdrant:
+    url: "http://localhost:6333"
+    collection_name: capa_documents
+    hnsw_config:
+      m: 16
+      ef_construct: 100
+
+# Similarity Analysis
+similarity:
+  threshold_recurrence: 0.85
+  top_k: 10
+  metadata_filters:
+    enabled: true
+    fields: ["date", "department", "product_line"]
+  query_latency_target_ms: 2000
+
+# Agent Configuration
+agent:
+  confidence_threshold: 0.85
+  human_review_required_below: 0.85
+  max_retries: 3
+  timeout_seconds: 60
+
+# XAI (Explainable AI)
+xai:
+  shap_enabled: true
+  attention_visualization: true
+  top_features: 5
+  citation_tracing: true
+
+# API Gateway (Kong-compatible)
+api:
+  host: "0.0.0.0"
+  port: 8000
+  rate_limit: 1000
+  oauth2_enabled: false
+
+# External Integrations
+integrations:
+  q100:
+    base_url: ""
+    webhook_path: "/webhooks/q100"
+    enabled: false
+  bizzmine:
+    base_url: ""
+    webhook_path: "/webhooks/bizzmine"
+    enabled: false
+  mastercontrol:
+    base_url: ""
+    sync_interval_hours: 24
+    enabled: false
+
+# MLflow
+mlflow:
+  tracking_uri: "http://localhost:5000"
+  experiment_name: "capa_ai"
+  model_registry: true
