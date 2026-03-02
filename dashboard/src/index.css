@@ -38,3 +38,33 @@ button {
 input, textarea, select {
   font-family: inherit;
 }
+
+/* AI/ML wow animations */
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.15); opacity: 0.2; }
+}
+
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(0, 200, 150, 0.2); }
+  50% { box-shadow: 0 0 40px rgba(0, 200, 150, 0.4); }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes typing {
+  from { width: 0; overflow: hidden; }
+  to { width: 100%; }
+}
+
+.ai-card-glow {
+  animation: glow 3s ease-in-out infinite;
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.5s ease forwards;
+  opacity: 0;
+}

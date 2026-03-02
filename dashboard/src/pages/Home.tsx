@@ -4,12 +4,28 @@ import { healthCheck } from '../api/client'
 import { useDemoMode } from '../demo/DemoContext'
 import { getSampleAnalysis } from '../demo/simulator'
 import { STORAGE_KEY } from '../api/client'
+import ProcessingOverlay from '../components/ProcessingOverlay'
 
 export default function Home() {
   const navigate = useNavigate()
   const [apiStatus, setApiStatus] = useState<'checking' | 'ok' | 'error'>('checking')
   const [loadingSample, setLoadingSample] = useState(false)
+  const [processingStep, setProcessingStep] = useState(0)
   const { isDemoMode } = useDemoMode()
+
+  useEffect(() => {
+    if (!loadingSample) {
+      setProcessingStep(0)
+      return
+    }
+    let i = 0
+    const id = setInterval(() => {
+      i++
+      setProcessingStep(Math.min(i, 4))
+      if (i >= 5) clearInterval(id)
+    }, 350)
+    return () => clearInterval(id)
+  }, [loadingSample])
 
   const handleViewSample = async () => {
     setLoadingSample(true)
@@ -30,6 +46,7 @@ export default function Home() {
 
   return (
     <div style={styles.container}>
+      <ProcessingOverlay visible={loadingSample} currentStep={processingStep} />
       {isDemoMode && (
         <div style={styles.demoBanner}>
           Demo Mode — Simulated AI responses, no backend required. Toggle off to use real API.

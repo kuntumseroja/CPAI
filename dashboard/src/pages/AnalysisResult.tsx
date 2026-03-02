@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { submitFeedback, STORAGE_KEY } from '../api/client'
 import { useDemoMode } from '../demo/DemoContext'
+import { ConfidenceRing, SHAPBarChart, SimilarityBars, RelevanceBars } from '../components/Visualizations'
 import type { AnalysisResult, RCAResult, CAPARecommendation, SimilarityResult, AgentStep, RAGDocument } from '../api/client'
 
 export default function AnalysisResultPage() {
@@ -37,17 +38,37 @@ export default function AnalysisResultPage() {
 
   return (
     <div style={styles.container}>
-      <h1 style={styles.title}>Analysis Result</h1>
+      <div style={styles.hero}>
+        <span style={styles.badge}>AI Analysis Complete</span>
+        <h1 style={styles.title}>Analysis Result</h1>
+        <p style={styles.heroSub}>LangGraph • RAG • XAI • Similarity Search</p>
+      </div>
 
       {agent_steps && agent_steps.length > 0 && (
-        <AgentPipelineCard steps={agent_steps} />
+        <section className="fade-in-up" style={{ animationDelay: '0.1s' }}>
+          <AgentPipelineCard steps={agent_steps} />
+        </section>
       )}
       {rag_context && rag_context.length > 0 && (
-        <RAGContextCard documents={rag_context} />
+        <section className="fade-in-up" style={{ animationDelay: '0.2s' }}>
+          <RAGContextCard documents={rag_context} />
+        </section>
       )}
-      {rca && <RCACard rca={rca} />}
-      {similarity && <SimilarityCard similarity={similarity} />}
-      {capa_recommendation && <CAPACard capa={capa_recommendation} />}
+      {rca && (
+        <section className="fade-in-up" style={{ animationDelay: '0.3s' }}>
+          <RCACard rca={rca} />
+        </section>
+      )}
+      {similarity && (
+        <section className="fade-in-up" style={{ animationDelay: '0.4s' }}>
+          <SimilarityCard similarity={similarity} />
+        </section>
+      )}
+      {capa_recommendation && (
+        <section className="fade-in-up" style={{ animationDelay: '0.5s' }}>
+          <CAPACard capa={capa_recommendation} />
+        </section>
+      )}
 
       <section style={styles.feedback}>
         <h3 style={styles.sectionTitle}>Feedback</h3>
@@ -78,19 +99,25 @@ export default function AnalysisResultPage() {
 
 function AgentPipelineCard({ steps }: { steps: AgentStep[] }) {
   return (
-    <section style={styles.card}>
-      <h2 style={styles.cardTitle}>Agent Pipeline (LangGraph)</h2>
+    <section style={{ ...styles.card, ...styles.cardGlow }}>
+      <div style={styles.cardHeader}>
+        <h2 style={styles.cardTitle}>Agent Pipeline (LangGraph)</h2>
+        <span style={styles.mlBadge}>ML</span>
+      </div>
       <p style={styles.pipelineDesc}>Multi-agent workflow: classify → retrieve → analyze → generate → validate</p>
-      <div style={styles.pipeline}>
+      <div style={styles.pipelineFlow}>
         {steps.map((s, i) => (
-          <div key={s.step} style={styles.pipelineStep}>
-            <span style={styles.stepNum}>{i + 1}</span>
-            <div style={styles.stepContent}>
-              <strong>{s.label}</strong>
-              {s.output && <span style={styles.stepOutput}>{s.output}</span>}
-              <span style={styles.stepDuration}>{s.duration_ms}ms</span>
+          <div key={s.step} style={styles.pipelineRow}>
+            <div style={styles.pipelineStep}>
+              <span style={styles.stepNum}>{i + 1}</span>
+              <div style={styles.stepContent}>
+                <strong>{s.label}</strong>
+                {s.output && <span style={styles.stepOutput}>{s.output}</span>}
+                <span style={styles.stepDuration}>{s.duration_ms}ms</span>
+              </div>
+              <span style={styles.stepStatus}>✓</span>
             </div>
-            <span style={styles.stepStatus}>✓</span>
+            {i < steps.length - 1 && <div style={styles.pipelineConnector} />}
           </div>
         ))}
       </div>
@@ -99,10 +126,15 @@ function AgentPipelineCard({ steps }: { steps: AgentStep[] }) {
 }
 
 function RAGContextCard({ documents }: { documents: RAGDocument[] }) {
+  const docsWithRel = documents.map((d) => ({ source: d.source, relevance: d.relevance }))
   return (
     <section style={styles.card}>
-      <h2 style={styles.cardTitle}>RAG Retrieval (LlamaIndex)</h2>
+      <div style={styles.cardHeader}>
+        <h2 style={styles.cardTitle}>RAG Retrieval (LlamaIndex)</h2>
+        <span style={styles.mlBadge}>RAG</span>
+      </div>
       <p style={styles.ragDesc}>Retrieved context grounding AI outputs — SOPs, historical CAPAs, regulations</p>
+      <RelevanceBars docs={docsWithRel} />
       <div style={styles.ragList}>
         {documents.map((d) => (
           <div key={d.id} style={styles.ragDoc}>
@@ -122,10 +154,14 @@ function RAGContextCard({ documents }: { documents: RAGDocument[] }) {
 function RCACard({ rca }: { rca: RCAResult }) {
   return (
     <section style={styles.card}>
-      <h2 style={styles.cardTitle}>Root Cause Analysis</h2>
+      <div style={styles.cardHeader}>
+        <h2 style={styles.cardTitle}>Root Cause Analysis</h2>
+        <div style={styles.confidenceWrap}>
+          <ConfidenceRing value={rca.confidence_score} label="Confidence" />
+        </div>
+      </div>
       <div style={styles.meta}>
         <span>Type: {rca.finding_type}</span>
-        <span>Confidence: {(rca.confidence_score * 100).toFixed(0)}%</span>
         {rca.requires_human_review && (
           <span style={styles.reviewBadge}>Human review required</span>
         )}
@@ -148,12 +184,8 @@ function RCACard({ rca }: { rca: RCAResult }) {
       )}
       {rca.shap_values && Object.keys(rca.shap_values).length > 0 && (
         <div style={styles.shap}>
-          <h4>Key Factors (XAI)</h4>
-          <div style={styles.shapList}>
-            {Object.entries(rca.shap_values).map(([k, v]) => (
-              <span key={k} style={styles.shapItem}>{k}: {(v * 100).toFixed(0)}%</span>
-            ))}
-          </div>
+          <h4>Key Factors (XAI / SHAP)</h4>
+          <SHAPBarChart data={rca.shap_values} />
         </div>
       )}
     </section>
@@ -162,16 +194,21 @@ function RCACard({ rca }: { rca: RCAResult }) {
 
 function SimilarityCard({ similarity }: { similarity: SimilarityResult }) {
   const hasRecurrence = similarity.potential_recurrences?.length > 0
+  const cases = similarity.similar_cases?.slice(0, 5) ?? []
   return (
     <section style={styles.card}>
-      <h2 style={styles.cardTitle}>Similar Cases</h2>
+      <div style={styles.cardHeader}>
+        <h2 style={styles.cardTitle}>Similar Cases</h2>
+        <span style={styles.mlBadge}>Vector Search</span>
+      </div>
       {hasRecurrence && (
         <div style={styles.recurrenceAlert}>
           ⚠ Potential recurrence detected ({similarity.potential_recurrences?.length} cases)
         </div>
       )}
+      {cases.length > 0 && <div style={{ marginBottom: '1rem' }}><SimilarityBars cases={cases} /></div>}
       <div style={styles.similarList}>
-        {similarity.similar_cases?.slice(0, 5).map((c) => (
+        {cases.map((c) => (
           <div key={c.case_id} style={styles.similarItem}>
             <div style={styles.similarHeader}>
               <span>{c.case_id}</span>
@@ -191,9 +228,13 @@ function SimilarityCard({ similarity }: { similarity: SimilarityResult }) {
 function CAPACard({ capa }: { capa: CAPARecommendation }) {
   return (
     <section style={styles.card}>
-      <h2 style={styles.cardTitle}>CAPA Recommendations</h2>
+      <div style={styles.cardHeader}>
+        <h2 style={styles.cardTitle}>CAPA Recommendations</h2>
+        <div style={styles.effectivenessWrap}>
+          <ConfidenceRing value={capa.effectiveness_score} label="Effectiveness" />
+        </div>
+      </div>
       <div style={styles.meta}>
-        <span>Effectiveness: {(capa.effectiveness_score * 100).toFixed(0)}%</span>
         <span>Timeline: {capa.implementation_timeline_days} days</span>
       </div>
       <div style={styles.actions}>
@@ -220,7 +261,60 @@ function CAPACard({ capa }: { capa: CAPARecommendation }) {
 
 const styles: Record<string, React.CSSProperties> = {
   container: { display: 'flex', flexDirection: 'column', gap: '1.5rem' },
-  title: { fontSize: '1.5rem', marginBottom: '0.5rem' },
+  hero: {
+    marginBottom: '0.5rem',
+    paddingBottom: '1rem',
+    borderBottom: '1px solid var(--border)',
+  },
+  badge: {
+    display: 'inline-block',
+    padding: '0.25rem 0.6rem',
+    background: 'linear-gradient(135deg, rgba(0, 200, 150, 0.2), rgba(0, 166, 125, 0.1))',
+    border: '1px solid rgba(0, 200, 150, 0.4)',
+    borderRadius: '6px',
+    fontSize: '0.75rem',
+    fontWeight: 600,
+    color: 'var(--accent)',
+    marginBottom: '0.75rem',
+    letterSpacing: '0.05em',
+  },
+  title: { fontSize: '1.5rem', marginBottom: '0.25rem' },
+  heroSub: {
+    fontSize: '0.85rem',
+    color: 'var(--text-secondary)',
+  },
+  cardHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: '0.75rem',
+    marginBottom: '0.5rem',
+  },
+  mlBadge: {
+    padding: '0.2rem 0.5rem',
+    background: 'var(--bg-secondary)',
+    border: '1px solid var(--accent)',
+    borderRadius: '4px',
+    fontSize: '0.7rem',
+    fontWeight: 600,
+    color: 'var(--accent)',
+  },
+  cardGlow: {
+    boxShadow: '0 0 30px rgba(0, 200, 150, 0.08)',
+    borderColor: 'rgba(0, 200, 150, 0.25)',
+  },
+  pipelineFlow: { display: 'flex', flexDirection: 'column', gap: 0 },
+  pipelineRow: { display: 'flex', flexDirection: 'column', alignItems: 'stretch' },
+  pipelineConnector: {
+    width: '2px',
+    height: '12px',
+    marginLeft: '23px',
+    background: 'linear-gradient(180deg, var(--accent), transparent)',
+    opacity: 0.6,
+  },
+  confidenceWrap: { marginTop: '-0.5rem' },
+  effectivenessWrap: { marginTop: '-0.5rem' },
   empty: {
     textAlign: 'center',
     padding: '3rem',

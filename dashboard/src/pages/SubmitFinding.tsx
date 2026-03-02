@@ -1,14 +1,32 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { submitFinding, STORAGE_KEY } from '../api/client'
 import { useDemoMode } from '../demo/DemoContext'
 import { SAMPLE_FINDINGS } from '../demo/sampleData'
+import ProcessingOverlay from '../components/ProcessingOverlay'
 import type { FindingInput, AnalysisResult } from '../api/client'
 
 export default function SubmitFinding() {
   const navigate = useNavigate()
   const { isDemoMode } = useDemoMode()
   const [loading, setLoading] = useState(false)
+  const [processingStep, setProcessingStep] = useState(0)
+
+  useEffect(() => {
+    if (!loading) {
+      setProcessingStep(0)
+      return
+    }
+    const steps = 5
+    const interval = 350
+    let i = 0
+    const id = setInterval(() => {
+      i++
+      setProcessingStep(Math.min(i, steps - 1))
+      if (i >= steps) clearInterval(id)
+    }, interval)
+    return () => clearInterval(id)
+  }, [loading])
   const [error, setError] = useState<string | null>(null)
   const [form, setForm] = useState<FindingInput>({
     finding_text: '',
@@ -64,6 +82,7 @@ export default function SubmitFinding() {
 
   return (
     <div style={styles.container}>
+      <ProcessingOverlay visible={loading} currentStep={processingStep} />
       <h1 style={styles.title}>Submit Finding for Analysis</h1>
       <p style={styles.subtitle}>
         Enter the quality finding details. AI will perform RCA, similarity search, and generate CAPA recommendations.
